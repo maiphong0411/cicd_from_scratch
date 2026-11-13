@@ -1,0 +1,37 @@
+jenkins:
+  numExecutors: 1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: ${JENKINS_ADMIN_PASSWORD}
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+unclassified:
+  location:
+    url: http://localhost:8080/
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              id: sonar-token
+              scope: GLOBAL
+              secret: ${SONAR_TOKEN}
+jobs:
+  - script: |
+      pipelineJob('app') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('file:///repo') }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+      }

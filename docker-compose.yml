@@ -1,0 +1,28 @@
+services:
+  jenkins:
+    build: ./infra/jenkins
+    image: cicd-jenkins
+    container_name: jenkins
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      # ALLOW_LOCAL_CHECKOUT: lets the job clone file:///repo, which the git plugin blocks by default
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true
+      CASC_JENKINS_CONFIG: /casc.yaml
+      KUBECONFIG: /kubeconfig
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD}
+      SONAR_TOKEN: ${SONAR_TOKEN}
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/repo:ro
+      - ./infra/jenkins/casc.yaml:/casc.yaml:ro
+      - ./infra/jenkins/kubeconfig:/kubeconfig:ro
+
+volumes:
+  jenkins_home:
+
+# join the network kind created, so Jenkins reaches the cluster, the registry and SonarQube by name
+networks:
+  default:
+    name: kind
+    external: true
