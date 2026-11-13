@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: APP_VERSION
+              value: {{ .Values.image.tag | quote }}
+          ports:
+            - containerPort: 8000
+          # without this, "helm --wait" would call a pod ready the moment its process starts
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000

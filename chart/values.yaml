@@ -1,0 +1,5 @@
+replicaCount: 2
+image:
+  repository: localhost:5001/app
+  tag: v1
+nodePort: 30080
