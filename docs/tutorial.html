@@ -1,0 +1,427 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Local CI/CD Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+  /* Layout: one reading column; each lab step is a row with a narrow label rail on the left that stacks on phones. */
+  :root {
+    --bg: #f5f7fb;
+    --surface: #ffffff;
+    --ink: #14213a;
+    --muted: #55627a;
+    --line: #d4dbe8;
+    --accent: #2457d6;
+    --pass: #1a7f4b;
+    --fail: #c2362b;
+    --skip: #8a94a8;
+    --code-bg: #101a2e;
+    --code-fg: #dbe6ff;
+    --code-dim: #8fa2c8;
+    --display: "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1524; --surface: #162036; --ink: #e6ecf8; --muted: #9aa8c2; --line: #2b3855;
+      --accent: #7da2ff; --pass: #4fc98a; --fail: #ff7a6e; --skip: #6f7b94;
+      --code-bg: #0a101d; --code-fg: #dbe6ff; --code-dim: #8fa2c8;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1524; --surface: #162036; --ink: #e6ecf8; --muted: #9aa8c2; --line: #2b3855;
+    --accent: #7da2ff; --pass: #4fc98a; --fail: #ff7a6e; --skip: #6f7b94;
+    --code-bg: #0a101d; --code-fg: #dbe6ff; --code-dim: #8fa2c8;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .page {
+    max-width: 54rem;
+    margin: 0 auto;
+    padding-block: 2.5rem 4rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+  section { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 6vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.7rem; font-weight: 700; padding-top: 1.25rem; border-top: 2px solid var(--ink); }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 65ch; }
+  ul { margin: 0; padding-left: 1.2rem; max-width: 65ch; display: flex; flex-direction: column; gap: 0.35rem; }
+  a { color: var(--accent); }
+  .eyebrow { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .lede { font-size: 1.15rem; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 0.9em; background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-fg);
+    font-family: var(--mono); font-size: 0.85rem; line-height: 1.55;
+    padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+  pre .dim { color: var(--code-dim); }
+  pre .ok { color: #6fe0a4; }
+  pre .bad { color: #ff9086; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.75rem 0.55rem 0; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+
+  /* pipeline diagram */
+  .runs { display: flex; flex-direction: column; gap: 1rem; }
+  .run { display: flex; flex-direction: column; gap: 0.4rem; }
+  .run-label { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+  .pipe { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: stretch; }
+  .stage {
+    flex: 1 1 7.5rem; min-width: 0;
+    background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--pass);
+    border-radius: 4px; padding: 0.55rem 0.7rem; display: flex; flex-direction: column; gap: 0.15rem;
+  }
+  .stage b { font-family: var(--display); font-size: 1.05rem; font-weight: 600; }
+  .stage span { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+  .stage.src { border-top-color: var(--ink); }
+  .stage.fail { border-top-color: var(--fail); }
+  .stage.fail span { color: var(--fail); }
+  .stage.skip { border-top-color: var(--skip); opacity: 0.6; }
+  .stage.pass span.state { color: var(--pass); }
+
+  /* lab steps */
+  .steps { display: flex; flex-direction: column; gap: 2.25rem; }
+  .step { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+  .step-rail { display: flex; flex-direction: column; gap: 0.2rem; }
+  .step-num { font-family: var(--display); font-size: 2.4rem; font-weight: 700; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .step-job { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .step-body { display: flex; flex-direction: column; gap: 0.8rem; min-width: 0; }
+  .question { font-weight: 500; font-size: 1.05rem; }
+  .note { border-left: 3px solid var(--accent); padding: 0.1rem 0 0.1rem 0.9rem; color: var(--muted); }
+  .note b { color: var(--ink); }
+  .ask { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.75rem 0.9rem; }
+  .ask b { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); display: block; }
+
+  .envs { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.6rem; }
+  .env { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .env b { font-family: var(--mono); font-size: 1rem; }
+  .env span { font-size: 0.85rem; color: var(--muted); }
+
+  dl { margin: 0; display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.5rem 1rem; }
+  dt { font-weight: 600; }
+  dd { margin: 0; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .step { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
+    .step-rail { flex-direction: row; align-items: baseline; gap: 0.7rem; }
+    dl { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+    dd { margin-bottom: 0.6rem; }
+    td:first-child { white-space: normal; }
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <section>
+      <span class="eyebrow">Lab guide · Jenkins · SonarQube · Helm · Kubernetes</span>
+      <h1>From a git commit to running software, on your own laptop</h1>
+      <p class="lede">You will build a complete CI/CD pipeline locally. First you do every job by hand, so you know what it is. Then you hand the jobs to a robot.</p>
+      <div class="runs">
+        <div class="run">
+          <span class="run-label">a good commit</span>
+          <div class="pipe">
+            <div class="stage src"><b>git commit</b><span>3fa9c1e</span></div>
+            <div class="stage pass"><b>Test</b><span class="state">passed</span></div>
+            <div class="stage pass"><b>SonarQube</b><span class="state">gate passed</span></div>
+            <div class="stage pass"><b>Build &amp; Push</b><span class="state">app:3fa9c1e</span></div>
+            <div class="stage pass"><b>Deploy</b><span class="state">rolled out</span></div>
+            <div class="stage pass"><b>Smoke test</b><span class="state">live: 3fa9c1e</span></div>
+          </div>
+        </div>
+        <div class="run">
+          <span class="run-label">a bad commit: the first failing stage stops everything after it</span>
+          <div class="pipe">
+            <div class="stage src"><b>git commit</b><span>5b0394c</span></div>
+            <div class="stage fail"><b>Test</b><span>exit code 1</span></div>
+            <div class="stage skip"><b>SonarQube</b><span>skipped</span></div>
+            <div class="stage skip"><b>Build &amp; Push</b><span>skipped</span></div>
+            <div class="stage skip"><b>Deploy</b><span>skipped</span></div>
+            <div class="stage skip"><b>Smoke test</b><span>live: still 3fa9c1e</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </header>
+
+  <section>
+    <h2>The problem</h2>
+    <p>Code on your disk is not running software. Between the two there are always the same five jobs, whatever tools you choose.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Job</th><th>Question it answers</th><th>Tool in this lab</th></tr></thead>
+        <tbody>
+          <tr><td>Check</td><td>Does the code work, and is it written safely?</td><td>unit tests, SonarQube</td></tr>
+          <tr><td>Pack</td><td>How do I ship the code with everything it needs?</td><td>Docker image</td></tr>
+          <tr><td>Store</td><td>Where can a different machine fetch the package?</td><td>registry</td></tr>
+          <tr><td>Run</td><td>Who keeps the right version running?</td><td>Kubernetes, described with Helm</td></tr>
+          <tr><td>Automate</td><td>Who does all of this, in order, on every commit?</td><td>Jenkins</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>CI</b> (continuous integration) is Check and Pack: every commit is proven to work and turned into a package. <b>CD</b> (continuous delivery) is Run: the package becomes the running version. The package in the registry is the handoff between them.</p>
+    <p class="note"><b>How to read this lab.</b> For each tool, separate three things: a hard constraint (it cannot work any other way), a design decision (someone chose it, and paid something for it), and a convention (a habit you could change). The tools will change during your career. The five jobs will not.</p>
+  </section>
+
+  <section>
+    <h2>Before you start</h2>
+    <ul>
+      <li>Install Docker Desktop, <code>kubectl</code>, <code>kind</code> and <code>helm</code>. Give Docker at least 8 GB of memory; the full stack uses about 4 GB.</li>
+      <li>Pull the large images ahead of class, because they are slow to download: <code>kindest/node</code>, <code>sonarqube:community</code>, <code>jenkins/jenkins:lts-jdk21</code>, <code>registry:2</code>, <code>python:3.13-alpine</code>.</li>
+      <li>The app is given to you: a 15-line Python web server in <code>app/app.py</code> and one unit test in <code>tests/test_app.py</code>. Your work is everything around it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The lab, step by step</h2>
+    <p>Steps 1 to 6 are done by hand. Step 7 automates them. Step 8 adds environments.</p>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">1</span><span class="step-job">Start</span></div>
+        <div class="step-body">
+          <h3>Run the app as a plain process</h3>
+          <p class="question">What has to be true for code to answer a request?</p>
+          <p>Four things: an executable the operating system can start, every file it needs, a network port it holds, and something keeping it alive. Every later tool exists to guarantee one of these on a machine that is not yours.</p>
+<pre><code>python3 app/app.py                          <span class="dim"># terminal 1: leave it running</span>
+curl localhost:8000                         <span class="dim"># terminal 2</span>
+lsof -nP -iTCP:8000 -sTCP:LISTEN</code></pre>
+          <p><b>Observe.</b> The process that owns port 8000 is <code>Python</code>, not <code>app.py</code>. Your file is only text; the interpreter is what runs. Stop it with Ctrl+C and <code>curl</code> is refused: a port only exists while a process holds it.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">2</span><span class="step-job">Pack</span></div>
+        <div class="step-body">
+          <h3>Build a container image</h3>
+          <p class="question">Why is copying <code>app.py</code> to a server not enough?</p>
+          <p>The server needs the same interpreter and libraries too. An image ships them with the code: it is a packed filesystem plus a note saying which command to start. A container is an ordinary process started from an image, which the kernel shows only that filesystem and a private set of ports.</p>
+<pre><code><span class="dim"># Dockerfile</span>
+FROM python:3.13-alpine
+WORKDIR /app
+COPY app/app.py .
+ENV PYTHONUNBUFFERED=1
+USER nobody
+EXPOSE 8000
+CMD ["python", "app.py"]</code></pre>
+<pre><code>docker build -t app:v1 .
+docker run -d --name try -p 8000:8000 -e APP_VERSION=v1 app:v1
+curl localhost:8000
+docker exec try python --version
+docker exec try ps
+docker rm -f try</code></pre>
+          <p><b>Observe.</b> The image is about 45 MB for 15 lines of code: that is the price of shipping the dependencies. Inside, Python is 3.13 whatever your laptop has, and <code>ps</code> shows a single process.</p>
+          <div class="ask"><b>Ask yourself</b>Run it again without <code>-p 8000:8000</code>. Why does <code>curl</code> fail although the app is running?</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">3</span><span class="step-job">Store</span></div>
+        <div class="step-body">
+          <h3>Push the image to a registry</h3>
+          <p class="question">How does an image get from the machine that builds it to the machine that runs it?</p>
+          <p>They share no disk, only the network. A registry is an HTTP server for images. The image name is also its address: <code>localhost:5001/app:v1</code> means server, repository, version.</p>
+<pre><code>docker run -d --name registry -p 127.0.0.1:5001:5000 registry:2
+docker tag app:v1 localhost:5001/app:v1
+docker push localhost:5001/app:v1
+curl localhost:5001/v2/app/tags/list</code></pre>
+          <p class="note"><b>Rule.</b> Never reuse a tag. A tag is only a label, and the registry will accept different content under the same one. If that happens, nobody can say which code <code>v1</code> is, and rolling back to it means nothing. The pipeline will tag every image with its git commit ID.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">4</span><span class="step-job">Run</span></div>
+        <div class="step-body">
+          <h3>Run it on Kubernetes</h3>
+          <p class="question">Who restarts the app when it crashes, and replaces it when a new version arrives?</p>
+          <p>You tell Kubernetes what should be true, for example "2 copies of this image". It then loops forever: look at what is running, compare with what you asked for, fix the difference. A crash and a new version are both just differences. <code>kind</code> gives you a real cluster inside one Docker container.</p>
+<pre><code>kind create cluster --name cicd --config infra/kind.yaml
+docker network connect kind registry
+docker exec cicd-control-plane sh -c 'mkdir -p /etc/containerd/certs.d/localhost:5001 &&
+  echo "[host.\"http://registry:5000\"]" > /etc/containerd/certs.d/localhost:5001/hosts.toml'
+
+kubectl create deployment app --image=localhost:5001/app:v1 --replicas=2
+kubectl get pods
+kubectl delete pod &lt;one pod name&gt;
+kubectl get pods
+kubectl create service nodeport app --tcp=80:8000 --node-port=30081
+curl localhost:8081</code></pre>
+          <p><b>Observe.</b> After you delete a pod there are still two, and one has a new name. Kubernetes did not revive the old pod; it made a new one, because the stored wish still says 2.</p>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>Object</th><th>Its job</th><th>Without it</th></tr></thead>
+              <tbody>
+                <tr><td>Deployment</td><td>keeps the right number of pods of the right image alive</td><td>nothing runs</td></tr>
+                <tr><td>Service</td><td>one fixed address in front of pods whose addresses keep changing</td><td>the app runs but cannot be reached</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note"><b>The tricky part.</b> <code>localhost</code> means "this machine" to whoever says it. On your laptop <code>localhost:5001</code> is the registry; inside the cluster node it is the node itself. The <code>hosts.toml</code> line tells the node to fetch <code>localhost:5001</code> images from the registry container instead.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">5</span><span class="step-job">Run</span></div>
+        <div class="step-body">
+          <h3>Describe it in files with Helm</h3>
+          <p class="question">What you typed in step 4 is recorded nowhere. How could a robot repeat it?</p>
+          <p>Write the Deployment and Service as files. Between two releases only one value differs, the image tag, so Helm keeps the files as templates with blanks and fills them at deploy time. Each deploy is stored as a numbered revision.</p>
+<pre><code>kubectl delete deployment app && kubectl delete service app
+
+helm template app chart                       <span class="dim"># preview, changes nothing</span>
+helm upgrade --install app chart --wait
+helm upgrade --install app chart --wait --set image.tag=v2
+helm history app
+helm rollback app 1 --wait</code></pre>
+          <p><b>Observe.</b> During the upgrade, a new pod becomes ready before an old one is removed, so the app never goes down. The rollback takes seconds: nothing is rebuilt, because the old image is still in the registry.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">6</span><span class="step-job">Check</span></div>
+        <div class="step-body">
+          <h3>Tests and a SonarQube quality gate</h3>
+          <p class="question">What stops broken code before it is packed?</p>
+          <p>Two different checks. Tests run the code and ask "does it do the right thing?". Static analysis reads the code without running it and asks "is it written in a way that tends to go wrong?". Neither replaces the other.</p>
+<pre><code>python3 -m coverage run --source=app -m unittest discover tests
+python3 -m coverage xml
+echo $?                                       <span class="dim"># 0 = success, anything else = failure</span>
+
+docker run -d --name sonarqube --network kind -p 127.0.0.1:9000:9000 sonarqube:community
+<span class="dim"># log in at localhost:9000, create an analysis token, then:</span>
+sonar-scanner -Dsonar.host.url=http://sonarqube:9000 -Dsonar.qualitygate.wait=true</code></pre>
+          <p><b>Observe.</b> The scan ends with <code>QUALITY GATE STATUS: PASSED</code> and exit code 0. The quality gate is a set of thresholds on the server. With <code>qualitygate.wait</code>, a failed gate becomes a non-zero exit code.</p>
+          <p class="note"><b>The whole mechanism of a pipeline</b> is the exit code. A pipeline runs a command, reads that number, and stops if it is not 0.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">7</span><span class="step-job">Automate</span></div>
+        <div class="step-body">
+          <h3>Hand the jobs to Jenkins</h3>
+          <p class="question">Who runs steps 2 to 6, in order, every time?</p>
+          <p>Jenkins waits for a new commit, runs a list of commands, and records the result. It adds no new ability. The list is the <code>Jenkinsfile</code>, stored with the code, and every line in it is a command you have already typed.</p>
+<pre><code><span class="dim">// Jenkinsfile, shortened</span>
+TAG = first 7 characters of the git commit
+
+stage('Test')          sh 'python3 -m coverage run ... unittest discover tests'
+stage('SonarQube')     sh 'sonar-scanner ... -Dsonar.qualitygate.wait=true'
+stage('Build &amp; Push')  sh 'docker build -t $IMAGE:$TAG . &amp;&amp; docker push $IMAGE:$TAG'
+stage('Deploy')        sh 'helm upgrade --install app chart --set image.tag=$TAG --wait --rollback-on-failure'
+stage('Smoke test')    sh 'curl ... | grep "version $TAG"'</code></pre>
+<pre><code>docker compose up -d                          <span class="dim"># Jenkins at localhost:8080</span>
+git commit -am "Change greeting"              <span class="dim"># then watch</span>
+curl localhost:8081</code></pre>
+          <p><b>Observe.</b> In the build's console output you will recognize every command, ending with <code>Finished: SUCCESS</code>. About a minute after a commit, <code>curl</code> answers with that commit's ID.</p>
+          <p class="note"><b>A robot has only the abilities you hand it.</b> Jenkins gets the git repository, the Docker socket, the cluster credentials and the SonarQube token. That list is what Jenkins can do, and also what someone who broke into Jenkins could do.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-rail"><span class="step-num">8</span><span class="step-job">Environments</span></div>
+        <div class="step-body">
+          <h3>One pipeline, three branches, three environments</h3>
+          <p class="question">How does a change reach production in controlled steps?</p>
+          <p>Each long-lived branch deploys to its own namespace, a separate area inside the same cluster. Jenkins checks every branch each minute and builds any branch whose latest commit it has not seen. A merge is simply a new commit on the target branch, so merging is what triggers the deploy.</p>
+          <div class="envs">
+            <div class="env"><b>develop</b><span>namespace develop · 1 copy</span><span>localhost:8081</span></div>
+            <div class="env"><b>uat</b><span>namespace uat · 1 copy</span><span>localhost:8082</span></div>
+            <div class="env"><b>prod</b><span>namespace prod · 2 copies</span><span>localhost:8083</span></div>
+          </div>
+<pre><code><span class="dim"># the Deploy stage uses the branch name twice</span>
+helm upgrade --install app chart \
+  --namespace $BRANCH_NAME \
+  -f chart/values-$BRANCH_NAME.yaml \
+  --set image.tag=$TAG</code></pre>
+<pre><code>git checkout uat  && git merge develop        <span class="dim"># promote to uat</span>
+curl localhost:8082
+git checkout prod && git merge uat            <span class="dim"># promote to prod</span>
+curl localhost:8083</code></pre>
+          <p><b>Observe.</b> After merging into <code>uat</code>, only port 8082 shows the new version. The same chart and the same code serve all three; the differences live in three small values files.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>Break it on purpose</h2>
+    <p>You understand a pipeline when you can predict how it fails. Guess the outcome before you run each one.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Do this</th><th>What should happen</th></tr></thead>
+        <tbody>
+          <tr><td>Break the test and commit</td><td>The build fails at Test. Later stages are skipped. The running app is untouched.</td></tr>
+          <tr><td>Delete all pods</td><td>Kubernetes recreates them within seconds, with new names.</td></tr>
+          <tr><td>Break the start command in the Dockerfile and commit</td><td>Test and scan pass, Deploy fails, Helm restores the previous revision.</td></tr>
+          <tr><td>Commit to develop only</td><td>Only the develop environment changes.</td></tr>
+          <tr><td>Roll back one Helm revision</td><td>The previous version serves again in seconds, with no rebuild.</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre><code><span class="dim">console output of a failed build</span>
+<span class="bad">AssertionError: 200 != 500</span>
+<span class="bad">FAILED (failures=1)</span>
+Stage "SonarQube" skipped due to earlier failure(s)
+Stage "Build &amp; Push" skipped due to earlier failure(s)
+Stage "Deploy" skipped due to earlier failure(s)
+Stage "Smoke test" skipped due to earlier failure(s)
+<span class="bad">Finished: FAILURE</span></code></pre>
+  </section>
+
+  <section>
+    <h2>What this lab leaves out</h2>
+    <p>The lab is honest about the mechanism and simplified in the surroundings. A real team would add:</p>
+    <ul>
+      <li>A git server with pull requests and protected branches. Here the repository is local, and Jenkins polls it every minute instead of being notified.</li>
+      <li>An approval step before production.</li>
+      <li>Building the image once and promoting that same image, instead of rebuilding on each branch.</li>
+      <li>Separate build machines. Here Jenkins runs as root with the laptop's Docker socket, which is full control of the host.</li>
+      <li>Passwords and TLS on the registry, a real database for SonarQube, and per-branch analysis, which the free edition lacks.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Words you will hear</h2>
+    <dl>
+      <dt>Image</dt><dd>A packed filesystem plus a start command. Does nothing until started.</dd>
+      <dt>Container</dt><dd>A process started from an image, with a restricted view of files and network.</dd>
+      <dt>Registry</dt><dd>A server that stores images so other machines can fetch them.</dd>
+      <dt>Tag</dt><dd>The version label on an image. Here, the git commit ID.</dd>
+      <dt>Node</dt><dd>A machine in a Kubernetes cluster.</dd>
+      <dt>Pod</dt><dd>A running container managed by Kubernetes. Disposable.</dd>
+      <dt>Deployment</dt><dd>The stored wish "keep N pods of this image running".</dd>
+      <dt>Service</dt><dd>A fixed address that forwards to whichever pods currently exist.</dd>
+      <dt>Namespace</dt><dd>A named, separate area inside one cluster. Here, one per environment.</dd>
+      <dt>Chart</dt><dd>Helm's templates for the Kubernetes files, with blanks.</dd>
+      <dt>Values</dt><dd>What fills the blanks. One small file per environment.</dd>
+      <dt>Release</dt><dd>One installed chart, with numbered revisions you can roll back to.</dd>
+      <dt>Quality gate</dt><dd>SonarQube's pass or fail verdict against a set of thresholds.</dd>
+      <dt>Stage</dt><dd>One step of the pipeline. A non-zero exit code stops the run.</dd>
+      <dt>Smoke test</dt><dd>A check that the deployed app answers, and with the expected version.</dd>
+    </dl>
+  </section>
+
+</div>
+
+</body></html>
