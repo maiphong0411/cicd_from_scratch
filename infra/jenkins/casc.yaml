@@ -22,16 +22,17 @@ credentials:
               secret: ${SONAR_TOKEN}
 jobs:
   - script: |
-      pipelineJob('app') {
-        definition {
-          cpsScm {
-            scm {
-              git {
-                remote { url('file:///repo') }
-                branch('*/main')
-              }
-            }
-            scriptPath('Jenkinsfile')
+      // one job per branch, created automatically; each runs the Jenkinsfile found on that branch
+      multibranchPipelineJob('app') {
+        branchSources {
+          git {
+            id('app')
+            remote('file:///repo')
+            includes('develop uat prod')
           }
+        }
+        // look for new commits on those branches every minute
+        triggers {
+          periodicFolderTrigger { interval('1m') }
         }
       }

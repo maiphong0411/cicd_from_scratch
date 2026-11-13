@@ -1,6 +1,7 @@
+// Runs for the branches develop, uat and prod (see infra/jenkins/casc.yaml).
+// The branch name is also the environment: its namespace and its chart/values-<branch>.yaml.
 pipeline {
   agent any
-  triggers { pollSCM('* * * * *') } // check the repo for new commits every minute
   environment {
     IMAGE = 'localhost:5001/app'
     TAG = "${env.GIT_COMMIT.take(7)}" // one immutable image tag per commit
@@ -26,13 +27,16 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        sh 'helm upgrade --install app chart --set image.tag=$TAG --wait --rollback-on-failure --timeout 2m'
+        sh 'helm upgrade --install app chart --namespace $BRANCH_NAME --create-namespace -f chart/values-$BRANCH_NAME.yaml --set image.tag=$TAG --wait --rollback-on-failure --timeout 2m'
       }
     }
     stage('Smoke test') {
       steps {
-        // the kind node's NodePort, reached over the shared docker network; must serve this commit
-        sh 'curl -fsS http://cicd-control-plane:30080/ | grep "version $TAG"'
+        // this environment's NodePort, reached over the shared docker network; must serve this commit
+        sh '''
+          PORT=$(awk '/^nodePort:/ {print $2}' chart/values-$BRANCH_NAME.yaml)
+          curl -fsS http://cicd-control-plane:$PORT/ | grep "version $TAG"
+        '''
       }
     }
   }

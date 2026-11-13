@@ -1,0 +1,2 @@
+replicaCount: 2
+nodePort: 30083
